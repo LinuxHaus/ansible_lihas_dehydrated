@@ -1,0 +1,13 @@
+#!/bin/bash
+# ansible managed
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+[ -x /usr/bin/mk-job ] && mkjob=yes
+
+if [ "$mkjob" = yes ]
+then
+  mk-job dehydrated_cleanup dehydrated -gc |& logger
+else
+  dehydrated_cleanup dehydrated -gc |& logger
+fi

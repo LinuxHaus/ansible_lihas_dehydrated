@@ -1,0 +1,18 @@
+galaxy_info:
+  author: Adrian Reyer <lihas@lihas.de>
+  description: Install dehydrated with http-01, test domains against staging and finally deploy them for real
+  license: GPL-3.0-or-later
+  galaxy_tags: []
+
+  min_ansible_version: 2.9
+
+  platforms:
+    - name: Debian
+      versions:
+      - all
+  galaxy_tags: []
+
+dependencies:
+  - name: lihas-variables
+    src: https://github.com/LinuxHaus/ansible-lihas-variables.git
+    tags: [never]

@@ -1,0 +1,90 @@
+---
+- name: include variables
+  include_role:
+    name: lihas-variables
+  when: configspaces is not defined
+- name: package installation
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "dehydrated"
+    - "dehydrated-apache2"
+    - "sudo"
+  loop_control:
+    loop_var: item
+  notify: restart_apache2
+- user:
+    name: www-data
+    groups: ssl-cert
+  notify: restart_apache2
+- name: dehydrated standard config
+  template:
+    dest: "{{ item }}"
+    src: "files{{ item }}"
+    mode: 0755
+  loop:
+    - /etc/dehydrated/conf.d/contact_email.sh
+    - /etc/dehydrated/conf.d/group.sh
+    - /etc/dehydrated/conf.d/hook_chain.sh
+    - /etc/dehydrated/conf.d/hook.sh
+    - /usr/local/bin/dehydrated-hook.sh
+    - /etc/cron.daily/dehydrated
+    - /etc/cron.monthly/dehydrated-cleanup
+  loop_control:
+    loop_var: item
+  notify: run_dehydrated
+- meta: flush_handlers
+# dehydrated test run
+- name: dehydrated create temporary file mktemp
+  tempfile:
+    state: file
+    suffix: temp
+  register: dehydratedconf
+  changed_when: False
+- name: dehydrated create temporary file content
+  shell:
+    cmd: |
+      dehydrated --env |
+      sed '
+        /^#/d
+        s/^declare -- //
+        s/^CA=.*/CA="https:\/\/acme-staging-v02.api.letsencrypt.org\/directory"/
+        s/^CERTDIR=.*/CERTDIR="\/var\/lib\/dehydrated\/certs-staging"/
+        /ACCOUNT/d
+      ' > {{ dehydratedconf.path }}
+  register: cmd_results
+  changed_when: False
+- command: /usr/bin/dehydrated --config {{ dehydratedconf.path }} --register --accept-terms
+  changed_when: False
+- name: collect rproxy entries
+  set_fact:
+    rproxy_domains: "{{ LIHASVARS.roles.rproxy | default({}) }}"
+  when: LIHASVARS.roles.rproxy is defined
+- name: collect rproxy entries
+  set_fact:
+    rproxy_domains: "{{ rproxy_domains | default({}) | combine( { 'domains': hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] } ) }}"
+    cacheable: no
+  loop: "{{ configspaces }}"
+  when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
+- include: "60-dehydrated-staging.yml"
+  loop: "{{ rproxy_domains.domains | flatten(levels=1) }}"
+  loop_control:
+    loop_var: item
+- name: dehydrated create temporary file removal
+  file:
+    path: "{{ dehydratedconf.path }}"
+    state: absent
+  changed_when: False
+
+- template:
+    dest: "{{ item }}"
+    src: "files{{ item }}"
+    mode: 0644
+  loop:
+    - /etc/dehydrated/domains.txt
+  loop_control:
+    loop_var: item
+  notify: run_dehydrated
+- command: /usr/bin/dehydrated --register --accept-terms
+  changed_when: False

@@ -1,0 +1,4 @@
+# ansible managed
+{% for i in dehydrated_domains | default([]) %}
+{{ i }}
+{% endfor %}
