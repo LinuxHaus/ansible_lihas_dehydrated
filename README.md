@@ -1,4 +1,4 @@
-# lihas-dehydrated
+# lihas_dehydrated
 
 Install dehydrated with http-01, test domains against staging and finally deploy them for real.
 
@@ -26,6 +26,6 @@ LIHASVARS:
 
 ## Dependencies
 
-* lihas-variables
+* lihas_variables
 
 ## Example Playbook
