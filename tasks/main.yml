@@ -67,6 +67,12 @@
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
+- name: collect dehydrated entries
+  set_fact:
+    rproxy_domains: "{{ rproxy_domains | default({}) | combine( { 'domains': hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] } ) }}"
+    cacheable: no
+  loop: "{{ configspaces }}"
+  when: hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] is defined
 - include: "60-dehydrated-staging.yml"
   loop: "{{ rproxy_domains.domains | flatten(levels=1) }}"
   loop_control:
