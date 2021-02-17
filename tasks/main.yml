@@ -59,30 +59,38 @@
   changed_when: False
 - name: collect rproxy entries LIHASVARS
   set_fact:
-    rproxy_domains: "{{ LIHASVARS.roles.rproxy | default({}) }}"
-  when: LIHASVARS.roles.rproxy is defined
+    rproxy_domainnames: "{{ LIHASVARS.roles.rproxy.domains | default({}) | flatten(levels=1) }}"
+  loop: "{{ configspaces }}"
+  when: LIHASVARS.roles.rproxy is defined and LIHASVARS.roles.rproxy.domains is defined
 - name: "collect rproxy entries {{ configspaces }}"
   set_fact:
-    rproxy_domains: "{{ rproxy_domains | default({}) | combine( { 'domains': hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] } ) }}"
+    rproxy_domains: "{{ rproxy_domains | default([]) + hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}"
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
+- name: DEBUG RPROXY after %.roles.rproxy.domains
+  debug:
+    var: rproxy_domains
 - name: collect dehydrated entries
   set_fact:
-    rproxy_domains: "{{ rproxy_domains | default({}) | combine( { 'domains': hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] } ) }}"
+    rproxy_domains: "{{ rproxy_domains | default([]) + hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] | default({}) | flatten(levels=1) }}"
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] is defined
+- name: DEBUG RPROXY after %.roles.dehydrated.domains
+  debug:
+    var: rproxy_domains
 - name: collect external_redirect entries
   set_fact:
-    rproxy_domains: "{{ rproxy_domains | default({}) | combine( { 'domains': hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] } ) }}"
+    rproxy_domains: "{{ rproxy_domains | default([]) + hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] | default({}) | flatten(levels=1) }}"
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] is defined
-- debug:
+- name: DEBUG RPROXY after %.roles.external_redirect.domains
+  debug:
     var: rproxy_domains
 - include: "60-dehydrated-staging.yml"
-  loop: "{{ rproxy_domains.domains | default([]) | flatten(levels=1) }}"
+  loop: "{{ rproxy_domains | default([]) }}"
   loop_control:
     loop_var: item
 - name: dehydrated create temporary file removal
