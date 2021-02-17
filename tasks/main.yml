@@ -57,11 +57,11 @@
   changed_when: False
 - command: /usr/bin/dehydrated --config {{ dehydratedconf.path }} --register --accept-terms
   changed_when: False
-- name: collect rproxy entries
+- name: collect rproxy entries LIHASVARS
   set_fact:
     rproxy_domains: "{{ LIHASVARS.roles.rproxy | default({}) }}"
   when: LIHASVARS.roles.rproxy is defined
-- name: collect rproxy entries
+- name: "collect rproxy entries {{ configspaces }}"
   set_fact:
     rproxy_domains: "{{ rproxy_domains | default({}) | combine( { 'domains': hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] } ) }}"
     cacheable: no
@@ -73,8 +73,16 @@
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] is defined
+- name: collect external_redirect entries
+  set_fact:
+    rproxy_domains: "{{ rproxy_domains | default({}) | combine( { 'domains': hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] } ) }}"
+    cacheable: no
+  loop: "{{ configspaces }}"
+  when: hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] is defined
+- debug:
+    var: rproxy_domains
 - include: "60-dehydrated-staging.yml"
-  loop: "{{ rproxy_domains.domains | flatten(levels=1) }}"
+  loop: "{{ rproxy_domains.domains | default([]) | flatten(levels=1) }}"
   loop_control:
     loop_var: item
 - name: dehydrated create temporary file removal
