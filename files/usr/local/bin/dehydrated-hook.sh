@@ -90,7 +90,14 @@ deploy_cert() {
     # cp "${KEYFILE}" "${FULLCHAINFILE}" /etc/nginx/ssl/; chown -R nginx: /etc/nginx/ssl
     # systemctl reload nginx
     chmod -R g+rX /var/lib/dehydrated/certs
-    systemctl reload apache2
+    # run csync2 if present
+    if which csync2 >/dev/null; then
+	csync2 -cr /
+	csync2 -xv
+    fi
+    if systemctl status apache2 >/dev/null; then
+	systemctl reload apache2
+    fi
 }
 
 deploy_ocsp() {
