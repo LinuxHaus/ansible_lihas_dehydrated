@@ -89,6 +89,17 @@
 - name: DEBUG RPROXY after %.roles.external_redirect.domains
   debug:
     var: rproxy_domainnames
+
+- name: collect local_pages entries
+  set_fact:
+    rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] | default({}) | flatten(levels=1) }}"
+    cacheable: no
+  loop: "{{ configspaces }}"
+  when: hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] is defined
+- name: DEBUG RPROXY after %.roles.local_pages.domains
+  debug:
+    var: rproxy_domainnames
+
 - include: "60-dehydrated-staging.yml"
   loop: "{{ rproxy_domainnames | default([]) }}"
   loop_control:
