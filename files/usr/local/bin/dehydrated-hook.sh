@@ -98,6 +98,9 @@ deploy_cert() {
     if systemctl status apache2 >/dev/null; then
 	systemctl reload apache2
     fi
+    if systemctl status postfix >/dev/null; then
+	systemctl reload postfix
+    fi
 }
 
 deploy_ocsp() {
