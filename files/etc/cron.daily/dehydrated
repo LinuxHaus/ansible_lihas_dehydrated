@@ -2,13 +2,15 @@
 # ansible managed
 # dehydrated renew, mit mk-job wenn vorhanden, mit '--now' ohne Pause
 
+DEBUG=0
 NOW=0
-TEMP=`getopt -o h --long now -- "$@"`
+TEMP=`getopt -o h --long now,debug -- "$@"`
 if [ $? != 0 ] ; then echo "Unknown parameter, read the source" >&2 ; exit 1 ; fi
 eval set -- "$TEMP"
 while true ; do
   case "$1" in
     --now)    NOW=1; shift 1;;
+    --debug)  DEBUG=1; shift 1;;
     --) shift ; break ;;
     *) echo "Unknown parameter $1, read the source" ; exit 1 ;;
   esac
@@ -24,35 +26,43 @@ export https_proxy=$PROXY_SRV
 [ -x /usr/bin/mk-job ] && mkjob=yes
 
 if [ "x$NOW" == "x0" ]; then
-# wait random but minimal 10 seconds
-sleep $[ ( $RANDOM % 50 ) + 10 ]
+  # wait random but minimal 10 seconds
+  sleep $[ ( $RANDOM % 50 ) + 10 ]
 fi
+if [ "x$DEBUG" != "x0" ]; then
+  set -vx
+fi
+
+# Fake LE Zertifikate entfernen
+find /var/lib/dehydrated/certs -name 'cert-*pem' |
+while read cert; do
+  openssl x509 -noout -text -in $cert | grep -q "Fake LE Intermediate" &&
+  rm $cert
+done
 
 # Die letsencrypt server sind manchmal nicht gut erreichbar, darum 'n' Versuche. Aber nicht zu viele
 # wegen drohender Sperre für eine Woche, falls ein anderer Fehler vorliegt.
-if [ "$mkjob" = yes ]
-then
-  sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt | while read domain
-  do
-    status=1
-    for try in {1..2}
-    do
-      mk-job dehydrated_$(awk '{print $1}' <<<${domain}) /usr/bin/dehydrated -c -d "$domain" | logger 2>&1 
-      [ ${PIPESTATUS[0]} = 0 ] && break 
-      [ "x$NOW" == "x1" ] && break 
-      [ $try = 2 ] && echo "Letsencrypt Renew didn't work for $domain, check syslog."
-    done 
+if [ "$mkjob" == yes ]; then
+  sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt | while read domain; do
+    status=0
+    for try in 1 2; do
+      cat /etc/dehydrated/domains.txt | sed '/^#\|^ \|^$/d' |while read line ; do echo mk-job dehydrated_$(awk '{print $1}' <<<${line}) dehydrated -c $(for i in $line ; do echo -en " -d $i" ; done ); status=$status+$?; done 2>&1 | logger --tag "dehydrated: "
+      if [ $DEBUG != 0 ]; then echo "DOMAIN $domain, Status $status, try=$try, hit enter"; read dummy; fi
+      [ ${status} -eq 0 ] && break
+      [ "x$NOW" == "x1" ] && break
+      [ $try -eq 2 ] && echo "Letsencrypt Renew didn't work for $domain, check syslog."
+    done
   done
 else
-  status=1
-  for try in {1..2}
-  do
-    dehydrated -c | logger 2>&1 
-    [ ${PIPESTATUS[0]} = 0 ] && break
-    [ "x$NOW" == "x1" ] && break 
-    [ $try = 2 ] && echo "Letsencrypt Renew didn't work(completely), check syslog."
+  status=0
+  for try in 1 2; do
+    cat /etc/dehydrated/domains.txt | sed '/^#\|^ \|^$/d' |while read line ; do dehydrated -c $(for i in $line ; do echo -en " -d $i" ; done ); status=$status+$?; done 2>&1 | logger --tag "dehydrated: "
+    if [ $DEBUG != 0 ]; then echo "DOMAIN $domain, Status $status, try=$try, hit enter"; read dummy; fi
+    [ ${status} == 0 ] && break
+    [ "x$NOW" == "x1" ] && break
+    [ $try -eq 2 ] && echo "Letsencrypt Renew didn't work(completely), check syslog."
   done
 fi
 
 # cleanup
-find /var/lib/dehydrated/certs/ -type f -empty -exec rm '{}' \; 
+find /var/lib/dehydrated/certs/ -type f -empty -exec rm '{}' \;
