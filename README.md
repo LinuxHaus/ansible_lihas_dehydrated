@@ -2,6 +2,8 @@
 
 Install dehydrated with http-01, test domains against staging and finally deploy them for real.
 
+Live dehydrated will only be run if the contents of /etc/dehydrated/domains.txt have changed.
+
 ## Requirements
 
 As of now this role provides the SSL-certificates for lihas_apache reverse proxy or directly named domains
