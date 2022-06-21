@@ -46,7 +46,7 @@ if [ "$mkjob" == yes ]; then
   sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt | while read domain; do
     status=0
     for try in 1 2; do
-      cat /etc/dehydrated/domains.txt | sed '/^#\|^ \|^$/d' |while read line ; do mk-job dehydrated_$(awk '{print $1}' <<<${line}) dehydrated -c $(for i in $line ; do echo -en " -d $i" ; done ); status=$(($status+$?)); done 2>&1 | logger --tag "dehydrated: "
+      mk-job dehydrated_$(awk '{print $1}' <<<${domain}) dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=i$(($status+$?))
       if [ $DEBUG != 0 ]; then echo "DOMAIN $domain, Status $status, try=$try, hit enter"; read dummy; fi
       [ ${status} -eq 0 ] && break
       [ "x$NOW" == "x1" ] && break
@@ -56,7 +56,7 @@ if [ "$mkjob" == yes ]; then
 else
   status=0
   for try in 1 2; do
-    cat /etc/dehydrated/domains.txt | sed '/^#\|^ \|^$/d' |while read line ; do dehydrated -c $(for i in $line ; do echo -en " -d $i" ; done ); status=$(($status+$?)); done 2>&1 | logger --tag "dehydrated: "
+    dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=$status+$?
     if [ $DEBUG != 0 ]; then echo "DOMAIN $domain, Status $status, try=$try, hit enter"; read dummy; fi
     [ ${status} == 0 ] && break
     [ "x$NOW" == "x1" ] && break
