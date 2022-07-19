@@ -57,10 +57,14 @@
   changed_when: False
 - command: /usr/bin/dehydrated --config {{ dehydratedconf.path }} --register --accept-terms
   changed_when: False
+- name: collect rproxy entries init
+  set_fact:
+    rproxy_domainnames: []
+    cacheable: no
 - name: collect rproxy entries LIHASVARS
   set_fact:
     rproxy_domainnames: "{{ LIHASVARS.roles.rproxy.domains | default({}) | flatten(levels=1) }}"
-  loop: "{{ configspaces }}"
+    cacheable: no
   when: LIHASVARS.roles.rproxy is defined and LIHASVARS.roles.rproxy.domains is defined
 - name: "collect rproxy entries {{ configspaces }}"
   set_fact:
