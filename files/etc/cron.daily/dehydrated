@@ -46,7 +46,7 @@ if [ "$mkjob" == yes ]; then
   sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt | while read domain; do
     status=0
     for try in 1 2; do
-      mk-job dehydrated_$(awk '{print $1}' <<<${domain}) dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=i$(($status+$?))
+      mk-job dehydrated_$(awk '{print $1}' <<<${domain}) dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=$(($status+$?))
       if [ $DEBUG != 0 ]; then echo "DOMAIN $domain, Status $status, try=$try, hit enter"; read dummy; fi
       [ ${status} -eq 0 ] && break
       [ "x$NOW" == "x1" ] && break
@@ -55,12 +55,15 @@ if [ "$mkjob" == yes ]; then
   done
 else
   status=0
-  for try in 1 2; do
-    dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=$status+$?
-    if [ $DEBUG != 0 ]; then echo "DOMAIN $domain, Status $status, try=$try, hit enter"; read dummy; fi
-    [ ${status} == 0 ] && break
-    [ "x$NOW" == "x1" ] && break
-    [ $try -eq 2 ] && echo "Letsencrypt Renew didn't work(completely), check syslog."
+  sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt | while read domain; do
+    status=0
+    for try in 1 2; do
+      dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=$status+$?
+      if [ $DEBUG != 0 ]; then echo "DOMAIN $domain, Status $status, try=$try, hit enter"; read dummy; fi
+      [ ${status} == 0 ] && break
+      [ "x$NOW" == "x1" ] && break
+      [ $try -eq 2 ] && echo "Letsencrypt Renew didn't work(completely), check syslog."
+    done
   done
 fi
 
