@@ -104,6 +104,11 @@
   debug:
     var: rproxy_domainnames
 
+- name: initialize dehydrated_domains
+  set_fact:
+    dehydrated_domains: []
+    cacheable: no
+
 - include: "60-dehydrated-staging.yml"
   loop: "{{ rproxy_domainnames | default([]) }}"
   loop_control:
