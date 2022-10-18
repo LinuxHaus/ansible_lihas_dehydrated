@@ -1,3 +1,4 @@
 ---
 - name: run_dehydrated
   command: /etc/cron.daily/dehydrated --now
+  become: "{{lihas_become | default('no')}}"

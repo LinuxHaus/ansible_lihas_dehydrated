@@ -3,6 +3,10 @@
   include_role:
     name: lihas_variables
   when: configspaces is not defined
+- name: check if become is necessary
+  set_fact:
+    lihas_become: "yes"
+  when: ansible_effective_user_id != "root"
 - name: package installation
   apt:
     name: "{{ item }}"
@@ -14,10 +18,12 @@
   loop_control:
     loop_var: item
   notify: restart_apache2
+  become: "{{lihas_become | default('no')}}"
 - user:
     name: www-data
     groups: ssl-cert
   notify: restart_apache2
+  become: "{{lihas_become | default('no')}}"
 - name: dehydrated standard config
   template:
     dest: "{{ item }}"
@@ -34,6 +40,7 @@
   loop_control:
     loop_var: item
   notify: run_dehydrated
+  become: "{{lihas_become | default('no')}}"
 - meta: flush_handlers
 # dehydrated test run
 - name: dehydrated create temporary file mktemp
@@ -42,6 +49,7 @@
     suffix: temp
   register: dehydratedconf
   changed_when: False
+  become: "{{lihas_become | default('no')}}"
 - name: dehydrated create temporary file content
   shell:
     cmd: |
@@ -55,23 +63,28 @@
       ' > {{ dehydratedconf.path }}
   register: cmd_results
   changed_when: False
+  become: "{{lihas_become | default('no')}}"
 - command: /usr/bin/dehydrated --config {{ dehydratedconf.path }} --register --accept-terms
   changed_when: False
+  become: "{{lihas_become | default('no')}}"
 - name: collect rproxy entries init
   set_fact:
     rproxy_domainnames: []
     cacheable: no
+  become: "{{lihas_become | default('no')}}"
 - name: collect rproxy entries LIHASVARS
   set_fact:
     rproxy_domainnames: "{{ LIHASVARS.roles.rproxy.domains | default({}) | flatten(levels=1) }}"
     cacheable: no
   when: LIHASVARS.roles.rproxy is defined and LIHASVARS.roles.rproxy.domains is defined
+  become: "{{lihas_become | default('no')}}"
 - name: "collect rproxy entries {{ configspaces }}"
   set_fact:
     rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}"
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
+  become: "{{lihas_become | default('no')}}"
 - name: DEBUG RPROXY after %.roles.rproxy.domains
   debug:
     var: rproxy_domainnames
@@ -81,6 +94,7 @@
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] is defined
+  become: "{{lihas_become | default('no')}}"
 - name: DEBUG RPROXY after %.roles.dehydrated.domains
   debug:
     var: rproxy_domainnames
@@ -90,6 +104,7 @@
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] is defined
+  become: "{{lihas_become | default('no')}}"
 - name: DEBUG RPROXY after %.roles.external_redirect.domains
   debug:
     var: rproxy_domainnames
@@ -100,6 +115,7 @@
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] is defined
+  become: "{{lihas_become | default('no')}}"
 - name: DEBUG RPROXY after %.roles.local_pages.domains
   debug:
     var: rproxy_domainnames
@@ -109,7 +125,7 @@
     dehydrated_domains: []
     cacheable: no
 
-- include: "60-dehydrated-staging.yml"
+- include_tasks: "60-dehydrated-staging.yml"
   loop: "{{ rproxy_domainnames | default([]) }}"
   loop_control:
     loop_var: item
@@ -118,6 +134,7 @@
     path: "{{ dehydratedconf.path }}"
     state: absent
   changed_when: False
+  become: "{{lihas_become | default('no')}}"
 
 - template:
     dest: "{{ item }}"
@@ -128,5 +145,7 @@
   loop_control:
     loop_var: item
   notify: run_dehydrated
+  become: "{{lihas_become | default('no')}}"
 - command: /usr/bin/dehydrated --register --accept-terms
   changed_when: False
+  become: "{{lihas_become | default('no')}}"

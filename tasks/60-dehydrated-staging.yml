@@ -5,10 +5,12 @@
     dehydrated --config {{ dehydratedconf.path }} -d {{ item }} -c || true
   register: cmd_results
   changed_when: False
+  become: "{{lihas_become | default('no')}}"
 - stat:
     path: "/var/lib/dehydrated/certs-staging/{{ item }}/cert.pem"
   register: stat_results
   changed_when: False
+  become: "{{lihas_become | default('no')}}"
 - set_fact:
     dehydrated_domains: "{{ dehydrated_domains + [ item ] }}"
   when: stat_results.stat.exists
