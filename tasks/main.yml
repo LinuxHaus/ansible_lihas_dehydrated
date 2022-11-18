@@ -7,23 +7,45 @@
   set_fact:
     lihas_become: "yes"
   when: ansible_effective_user_id != "root"
+- name: package facts
+  package_facts:
+    manager: "auto"
 - name: package installation
   apt:
     name: "{{ item }}"
     state: present
   loop:
     - "dehydrated"
-    - "dehydrated-apache2"
     - "sudo"
+  loop_control:
+    loop_var: item
+  become: "{{lihas_become | default('no')}}"
+- name: package installation apache only
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "dehydrated-apache2"
   loop_control:
     loop_var: item
   notify: restart_apache2
   become: "{{lihas_become | default('no')}}"
+  when: "'apache2' is in ansible_facts.packages"
 - user:
     name: www-data
     groups: ssl-cert
   notify: restart_apache2
   become: "{{lihas_become | default('no')}}"
+- name: collect dehydrated reload services
+  set_fact:
+    dehydrated_services_reload: {LIHASVARS.variables.dehydrated_services_reload | default('apache2 postfix')}
+    cacheable: no
+- name: "collect rproxy entries {{ configspaces }}"
+  set_fact:
+    rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}"
+    cacheable: no
+  loop: "{{ configspaces }}"
+  when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
 - name: dehydrated standard config
   template:
     dest: "{{ item }}"
@@ -84,7 +106,6 @@
     cacheable: no
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
-  become: "{{lihas_become | default('no')}}"
 - name: DEBUG RPROXY after %.roles.rproxy.domains
   debug:
     var: rproxy_domainnames

@@ -95,12 +95,20 @@ deploy_cert() {
 	csync2 -cr /
 	csync2 -xv
     fi
-    if systemctl status apache2 >/dev/null; then
-	systemctl reload apache2
+{%  for config in hostvars[inventory_hostname]['configspaces'] | default([]) %}{%
+       if hostvars[inventory_hostname][config]['config']['roles'] is defined and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated'] is defined  and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['services'] is defined %}{%
+            for service in hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['services']['reload'] | default([]) %}
+    if systemctl status {{service}} >/dev/null; then
+        systemctl reload {{service}}
     fi
-    if systemctl status postfix >/dev/null; then
-	systemctl reload postfix
+{% endfor %}{% for service in hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['services']['restart'] | default([]) %}
+    if systemctl status {{service}} >/dev/null; then
+        systemctl restart {{service}}
     fi
+{% endfor %}{% endif %}{% endfor %}
+
 }
 
 deploy_ocsp() {

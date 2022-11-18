@@ -35,6 +35,10 @@ LIHASVARS:
       dehydrated:
         domains:
           DOMAINNAME: ~
+# list of services to reload after certificate deploy
+%.config.roles.dehydrated.services.reload: []
+# list of services to restart after certificate deploy
+%.config.roles.dehydrated.services.restart: []
 ```
 
 ## Dependencies
