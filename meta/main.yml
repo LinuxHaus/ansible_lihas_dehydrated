@@ -1,5 +1,6 @@
 galaxy_info:
   author: Adrian Reyer <lihas@lihas.de>
+  namespace: lihas
   description: Install dehydrated with http-01, test domains against staging and finally deploy them for real
   license: GPL-3.0-or-later
   galaxy_tags: []

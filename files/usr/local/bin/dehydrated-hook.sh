@@ -95,6 +95,14 @@ deploy_cert() {
 	csync2 -cr /
 	csync2 -xv
     fi
+
+{% for config in hostvars[inventory_hostname]['configspaces'] | default([]) %}{%
+       if hostvars[inventory_hostname][config]['config']['roles'] is defined and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated'] is defined  and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['plugins'] is defined %}{%
+            for plugin in hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['plugins']['deploy_cert'] | default([]) %}
+    {{ plugin }} "$DOMAIN" "$KEYFILE" "$CERTFILE" "$FULLCHAINFILE" "$CHAINFILE" "$TIMESTAMP"
+{% endfor %}{% endif %}{% endfor %}
 {%  for config in hostvars[inventory_hostname]['configspaces'] | default([]) %}{%
        if hostvars[inventory_hostname][config]['config']['roles'] is defined and
           hostvars[inventory_hostname][config]['config']['roles']['dehydrated'] is defined  and
