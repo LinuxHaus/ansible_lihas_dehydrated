@@ -3,6 +3,13 @@
   include_role:
     name: lihas_variables
   when: configspaces is not defined
+- name: Lihas_become init
+  ansible.builtin.set_fact:
+    lihas_become: "{{ lihas_become | default(false) }}"
+- name: Check if become is necessary
+  ansible.builtin.set_fact:
+    lihas_become: true
+  when: ansible_effective_user_id != 0
 - name: check if become is necessary
   set_fact:
     lihas_become: "yes"
