@@ -1,17 +1,19 @@
 ---
 # test dehydrated certificate request for domain
-- name: dehydrated test {{ item }}
-  shell: |
+- name: Run dehydrated test {{ item }}
+  ansible.builtin.shell: |
     dehydrated --config {{ dehydratedconf.path }} -d "{{ item }}" -c || true
   register: cmd_results
   changed_when: False
   become: "{{ lihas_become | default('no') }}"
-- stat:
+- name: Check if staging certificate exists
+  ansible.builtin.stat:
     path: "/var/lib/dehydrated/certs-staging/{{ item | regex_replace(' .*', '') }}/cert.pem"
   register: stat_results
   changed_when: False
   become: "{{lihas_become | default('no')}}"
-- set_fact:
+- name: Add successfull certificates
+  ansible.builtin.set_fact:
     dehydrated_domains: "{{ dehydrated_domains + [ item ] }}"
   when: stat_results.stat.exists
   changed_when: False

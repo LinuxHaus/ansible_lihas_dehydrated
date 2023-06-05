@@ -1,6 +1,6 @@
 ---
-- name: include variables
-  include_role:
+- name: Include variables
+  ansible.builtin.include_role:
     name: lihas_variables
   when: configspaces is not defined
 - name: Lihas_become init
@@ -10,15 +10,15 @@
   ansible.builtin.set_fact:
     lihas_become: true
   when: ansible_effective_user_id != 0
-- name: check if become is necessary
-  set_fact:
+- name: Check if become is necessary
+  ansible.builtin.set_fact:
     lihas_become: "yes"
   when: ansible_effective_user_id != "root"
-- name: package facts
-  package_facts:
+- name: Package facts
+  ansible.builtin.package_facts:
     manager: "auto"
-- name: package installation
-  apt:
+- name: Package installation
+  ansible.builtin.apt:
     name: "{{ item }}"
     state: present
   loop:
@@ -26,9 +26,9 @@
     - "sudo"
   loop_control:
     loop_var: item
-  become: "{{lihas_become | default('no')}}"
-- name: package installation apache only
-  apt:
+  become: "{{ lihas_become | default('no') }}"
+- name: Package installation apache only
+  ansible.builtin.apt:
     name: "{{ item }}"
     state: present
   loop:
@@ -36,28 +36,30 @@
   loop_control:
     loop_var: item
   notify: restart_apache2
-  become: "{{lihas_become | default('no')}}"
+  become: "{{ lihas_become | default('no') }}"
   when: "'apache2' is in ansible_facts.packages"
-- user:
+- name: Add www-data to ssl-cert
+  ansible.builtin.user:
     name: www-data
     groups: ssl-cert
   notify: restart_apache2
-  become: "{{lihas_become | default('no')}}"
-- name: collect dehydrated reload services
-  set_fact:
+  when: "'apache2' is in ansible_facts.packages"
+  become: "{{ lihas_become | default('no') }}"
+- name: Collect dehydrated reload services
+  ansible.builtin.set_fact:
     dehydrated_services_reload: {LIHASVARS.variables.dehydrated_services_reload | default('apache2 postfix')}
-    cacheable: no
-- name: "collect rproxy entries {{ configspaces }}"
-  set_fact:
+    cacheable: false
+- name: "Collect rproxy entries {{ configspaces }}"
+  ansible.builtin.set_fact:
     rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}"
-    cacheable: no
+    cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
-- name: dehydrated standard config
-  template:
+- name: Dehydrated standard config
+  ansible.builtin.template:
     dest: "{{ item }}"
     src: "files{{ item }}"
-    mode: 0755
+    mode: "0755"
   loop:
     - /etc/dehydrated/conf.d/contact_email.sh
     - /etc/dehydrated/conf.d/group.sh
@@ -69,18 +71,27 @@
   loop_control:
     loop_var: item
   notify: run_dehydrated
-  become: "{{lihas_become | default('no')}}"
-- meta: flush_handlers
+  become: "{{ lihas_become | default('no') }}"
+- name: Create /var/lib/dehydrated/certs
+  ansible.builtin.file:
+    path: /var/lib/dehydrated/certs
+    mode: "0750"
+    group: ssl-sync
+    owner: ssl-sync
+    state: directory
+  become: "{{ lihas_become | default('no') }}"
+- name: "Flush handlers"
+  ansible.builtin.meta: flush_handlers
 # dehydrated test run
-- name: dehydrated create temporary file mktemp
-  tempfile:
+- name: Dehydrated create temporary file mktemp
+  ansible.builtin.tempfile:
     state: file
     suffix: temp
   register: dehydratedconf
-  changed_when: False
-  become: "{{lihas_become | default('no')}}"
-- name: dehydrated create temporary file content
-  shell:
+  changed_when: false
+  become: "{{ lihas_become | default('no') }}"
+- name: Dehydrated create temporary file content
+  ansible.builtin.shell:
     cmd: |
       dehydrated --env |
       sed '
@@ -91,89 +102,93 @@
         /ACCOUNT/d
       ' > {{ dehydratedconf.path }}
   register: cmd_results
-  changed_when: False
-  become: "{{lihas_become | default('no')}}"
-- command: /usr/bin/dehydrated --config {{ dehydratedconf.path }} --register --accept-terms
-  changed_when: False
-  become: "{{lihas_become | default('no')}}"
-- name: collect rproxy entries init
-  set_fact:
+  changed_when: false
+  become: "{{ lihas_become | default('no') }}"
+- name: "Run dehydrated staging --register"
+  ansible.builtin.command: /usr/bin/dehydrated --config {{ dehydratedconf.path }} --register --accept-terms
+  changed_when: false
+  become: "{{ lihas_become | default('no') }}"
+- name: Collect rproxy entries init
+  ansible.builtin.set_fact:
     rproxy_domainnames: []
-    cacheable: no
-  become: "{{lihas_become | default('no')}}"
-- name: collect rproxy entries LIHASVARS
-  set_fact:
+    cacheable: false
+  become: "{{ lihas_become | default('no') }}"
+- name: Collect rproxy entries LIHASVARS
+  ansible.builtin.set_fact:
     rproxy_domainnames: "{{ LIHASVARS.roles.rproxy.domains | default({}) | flatten(levels=1) }}"
-    cacheable: no
+    cacheable: false
   when: LIHASVARS.roles.rproxy is defined and LIHASVARS.roles.rproxy.domains is defined
-  become: "{{lihas_become | default('no')}}"
-- name: "collect rproxy entries {{ configspaces }}"
-  set_fact:
+  become: "{{ lihas_become | default('no') }}"
+- name: "Collect rproxy entries {{ configspaces }}"
+  ansible.builtin.set_fact:
     rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}"
-    cacheable: no
+    cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
 - name: DEBUG RPROXY after %.roles.rproxy.domains
-  debug:
+  ansible.builtin.debug:
     var: rproxy_domainnames
-- name: collect dehydrated entries
-  set_fact:
+- name: Collect dehydrated entries
+  ansible.builtin.set_fact:
     rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] | default({}) | flatten(levels=1) }}"
-    cacheable: no
+    cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] is defined
-  become: "{{lihas_become | default('no')}}"
+  become: "{{ lihas_become | default('no') }}"
 - name: DEBUG RPROXY after %.roles.dehydrated.domains
-  debug:
+  ansible.builtin.debug:
     var: rproxy_domainnames
-- name: collect external_redirect entries
-  set_fact:
+- name: Collect external_redirect entries
+  ansible.builtin.set_fact:
     rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] | default({}) | flatten(levels=1) }}"
-    cacheable: no
+    cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] is defined
-  become: "{{lihas_become | default('no')}}"
+  become: "{{ lihas_become | default('no') }}"
 - name: DEBUG RPROXY after %.roles.external_redirect.domains
-  debug:
+  ansible.builtin.debug:
     var: rproxy_domainnames
 
-- name: collect local_pages entries
-  set_fact:
+- name: Collect local_pages entries
+  ansible.builtin.set_fact:
     rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] | default({}) | flatten(levels=1) }}"
-    cacheable: no
+    cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] is defined
-  become: "{{lihas_become | default('no')}}"
+  become: "{{ lihas_become | default('no') }}"
 - name: DEBUG RPROXY after %.roles.local_pages.domains
-  debug:
+  ansible.builtin.debug:
     var: rproxy_domainnames
 
-- name: initialize dehydrated_domains
-  set_fact:
+- name: Initialize dehydrated_domains
+  ansible.builtin.set_fact:
     dehydrated_domains: []
-    cacheable: no
+    cacheable: false
 
-- include_tasks: "60-dehydrated-staging.yml"
+- name: Include 60-dehydrated-staging.yml
+  ansible.builtin.include_tasks: "60-dehydrated-staging.yml"
   loop: "{{ rproxy_domainnames | default([]) }}"
   loop_control:
     loop_var: item
-- name: dehydrated create temporary file removal
-  file:
+- name: Dehydrated create temporary file removal
+  ansible.builtin.file:
     path: "{{ dehydratedconf.path }}"
     state: absent
-  changed_when: False
-  become: "{{lihas_become | default('no')}}"
+  changed_when: false
+  become: "{{ lihas_become | default('no') }}"
 
-- template:
+- name: Create /etc/dehydrated/domains.txt
+  ansible.builtin.template:
     dest: "{{ item }}"
     src: "files{{ item }}"
-    mode: 0644
+    mode: "0644"
   loop:
     - /etc/dehydrated/domains.txt
   loop_control:
     loop_var: item
   notify: run_dehydrated
-  become: "{{lihas_become | default('no')}}"
-- command: /usr/bin/dehydrated --register --accept-terms
-  changed_when: False
-  become: "{{lihas_become | default('no')}}"
+  become: "{{ lihas_become | default('no') }}"
+- name: "Run dehydrated --register"
+  ansible.builtin.command: /usr/bin/dehydrated --register --accept-terms
+  changed_when: false
+  become: "{{ lihas_become | default('no') }}"
