@@ -53,3 +53,7 @@ LIHASVARS:
   role: lihas_dehydrated
 ...
 ```
+## Manual testsA
+The playbook requests staging certificates on each run unless a valid saging certificate is already present.
+
+If manual debugging is needed you can use staging by touching `/tmp/dehydratedtest`, don't forget to remove it afterwards.

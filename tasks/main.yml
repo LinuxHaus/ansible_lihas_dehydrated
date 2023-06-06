@@ -61,6 +61,7 @@
     src: "files{{ item }}"
     mode: "0755"
   loop:
+    - /etc/dehydrated/conf.d/ca.sh
     - /etc/dehydrated/conf.d/contact_email.sh
     - /etc/dehydrated/conf.d/group.sh
     - /etc/dehydrated/conf.d/hook_chain.sh
