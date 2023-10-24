@@ -43,7 +43,7 @@ done
 # Die letsencrypt server sind manchmal nicht gut erreichbar, darum 'n' Versuche. Aber nicht zu viele
 # wegen drohender Sperre für eine Woche, falls ein anderer Fehler vorliegt.
 if [ "$mkjob" == yes ]; then
-  sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt | while read domain; do
+  sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt $( [ -d /etc/dehydrated/domains.txt.d ] && find /etc/dehydrated/domains.txt.d -name '*.txt')  | while read domain; do
     status=0
     for try in 1 2; do
       mk-job dehydrated_$(awk '{print $1}' <<<${domain}) dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=$(($status+$?))
@@ -55,7 +55,7 @@ if [ "$mkjob" == yes ]; then
   done
 else
   status=0
-  sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt | while read domain; do
+  sed '/^#\|^ \|^$/d' /etc/dehydrated/domains.txt $( [ -d /etc/dehydrated/domains.txt.d ] && find /etc/dehydrated/domains.txt.d -name '*.txt') | while read domain; do
     status=0
     for try in 1 2; do
       dehydrated -c $(for i in $domain ; do echo -en " -d $i" ; done ); status=$status+$?
