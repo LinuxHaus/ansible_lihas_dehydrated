@@ -35,14 +35,14 @@
     - "dehydrated-apache2"
   loop_control:
     loop_var: item
-  notify: restart_apache2
+  notify: Restart apache2
   become: "{{ lihas_become | default('no') }}"
   when: "'apache2' is in ansible_facts.packages"
 - name: Add www-data to ssl-cert
   ansible.builtin.user:
     name: www-data
     groups: ssl-cert
-  notify: restart_apache2
+  notify: Restart apache2
   when: "'apache2' is in ansible_facts.packages"
   become: "{{ lihas_become | default('no') }}"
 - name: Collect dehydrated reload services
@@ -51,7 +51,9 @@
     cacheable: false
 - name: "Collect rproxy entries {{ configspaces }}"
   ansible.builtin.set_fact:
-    rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}"
+    rproxy_domainnames: >-
+      {{ rproxy_domainnames | default([]) +
+      hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}
     cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
@@ -71,7 +73,7 @@
     - /etc/cron.monthly/dehydrated-cleanup
   loop_control:
     loop_var: item
-  notify: run_dehydrated
+  notify: Run dehydrated
   become: "{{ lihas_become | default('no') }}"
 - name: Create /var/lib/dehydrated/certs
   ansible.builtin.file:
@@ -122,7 +124,9 @@
   become: "{{ lihas_become | default('no') }}"
 - name: "Collect rproxy entries {{ configspaces }}"
   ansible.builtin.set_fact:
-    rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}"
+    rproxy_domainnames: >-
+      {{ rproxy_domainnames | default([]) +
+      hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] | default({}) | flatten(levels=1) }}
     cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
@@ -131,7 +135,9 @@
     var: rproxy_domainnames
 - name: Collect dehydrated entries
   ansible.builtin.set_fact:
-    rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] | default({}) | flatten(levels=1) }}"
+    rproxy_domainnames: >-
+      {{ rproxy_domainnames | default([]) +
+      hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] | default({}) | flatten(levels=1) }}
     cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['dehydrated']['domains'] is defined
@@ -141,7 +147,9 @@
     var: rproxy_domainnames
 - name: Collect external_redirect entries
   ansible.builtin.set_fact:
-    rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] | default({}) | flatten(levels=1) }}"
+    rproxy_domainnames: >-
+      {{ rproxy_domainnames | default([]) +
+      hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] | default({}) | flatten(levels=1) }}
     cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['external_redirect']['domains'] is defined
@@ -152,7 +160,9 @@
 
 - name: Collect local_pages entries
   ansible.builtin.set_fact:
-    rproxy_domainnames: "{{ rproxy_domainnames | default([]) + hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] | default({}) | flatten(levels=1) }}"
+    rproxy_domainnames: >-
+      {{ rproxy_domainnames | default([]) +
+      hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] | default({}) | flatten(levels=1) }}
     cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['local_pages']['domains'] is defined
@@ -187,7 +197,7 @@
     - /etc/dehydrated/domains.txt
   loop_control:
     loop_var: item
-  notify: run_dehydrated
+  notify: Run dehydrated
   become: "{{ lihas_become | default('no') }}"
 - name: "Run dehydrated --register"
   ansible.builtin.command: /usr/bin/dehydrated --register --accept-terms

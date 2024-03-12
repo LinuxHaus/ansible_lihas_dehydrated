@@ -1,4 +1,4 @@
 ---
-- name: run_dehydrated
+- name: Run dehydrated
   ansible.builtin.command: /etc/cron.daily/dehydrated --now
   become: "{{ lihas_become | default('no') }}"
