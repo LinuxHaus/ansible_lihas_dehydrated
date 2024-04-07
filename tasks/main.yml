@@ -157,7 +157,6 @@
 - name: DEBUG RPROXY after %.roles.external_redirect.domains
   ansible.builtin.debug:
     var: rproxy_domainnames
-
 - name: Collect local_pages entries
   ansible.builtin.set_fact:
     rproxy_domainnames: >-
@@ -170,12 +169,10 @@
 - name: DEBUG RPROXY after %.roles.local_pages.domains
   ansible.builtin.debug:
     var: rproxy_domainnames
-
 - name: Initialize dehydrated_domains
   ansible.builtin.set_fact:
     dehydrated_domains: []
     cacheable: false
-
 - name: Include 60-dehydrated-staging.yml
   ansible.builtin.include_tasks: "60-dehydrated-staging.yml"
   loop: "{{ rproxy_domainnames | default([]) }}"
@@ -187,7 +184,6 @@
     state: absent
   changed_when: false
   become: "{{ lihas_become | default('no') }}"
-
 - name: Create /etc/dehydrated/domains.txt
   ansible.builtin.template:
     dest: "{{ item }}"
