@@ -9,5 +9,5 @@ if [ "$mkjob" = yes ]
 then
   mk-job dehydrated_cleanup dehydrated -gc |& logger
 else
-  dehydrated_cleanup dehydrated -gc |& logger
+  dehydrated -gc |& logger
 fi
