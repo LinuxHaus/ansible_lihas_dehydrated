@@ -39,6 +39,12 @@ LIHASVARS:
 %.config.roles.dehydrated.services.reload: []
 # list of services to restart after certificate deploy
 %.config.roles.dehydrated.services.restart: []
+# complete commands to call for 'deploy_challenge' in /usr/local/bin/dehydrated-hook.sh
+%.config.roles.dehydrated.plugins.deploy_challenges: []
+# complete commands to call for 'clean_challenge' in /usr/local/bin/dehydrated-hook.sh
+%.config.roles.dehydrated.plugins.clean_challenges: []
+# commands to call for 'deploy_cert' in /usr/local/bin/dehydrated-hook.sh, wikll have additional parameters "$DOMAIN" "$KEYFILE" "$CERTFILE" "$FULLCHAINFILE" "$CHAINFILE" "$TIMESTAMP"
+%.config.roles.dehydrated.plugins.deploy_cert: []
 ```
 
 ## Dependencies

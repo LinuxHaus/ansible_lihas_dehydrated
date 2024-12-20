@@ -23,6 +23,13 @@ deploy_challenge() {
 
     # Simple example: Use nsupdate with local named
     # printf 'server 127.0.0.1\nupdate add _acme-challenge.%s 300 IN TXT "%s"\nsend\n' "${DOMAIN}" "${TOKEN_VALUE}" | nsupdate -k /var/run/named/session.key
+{% for config in hostvars[inventory_hostname]['configspaces'] | default([]) %}{%
+       if hostvars[inventory_hostname][config]['config']['roles'] is defined and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated'] is defined  and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['plugins'] is defined %}{%
+            for plugin in hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['plugins']['deploy_challenge'] | default([]) %}
+    {{ plugin }}
+{% endfor %}{% endif %}{% endfor %}
 }
 
 clean_challenge() {
@@ -36,6 +43,13 @@ clean_challenge() {
 
     # Simple example: Use nsupdate with local named
     # printf 'server 127.0.0.1\nupdate delete _acme-challenge.%s TXT "%s"\nsend\n' "${DOMAIN}" "${TOKEN_VALUE}" | nsupdate -k /var/run/named/session.key
+{% for config in hostvars[inventory_hostname]['configspaces'] | default([]) %}{%
+       if hostvars[inventory_hostname][config]['config']['roles'] is defined and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated'] is defined  and
+          hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['plugins'] is defined %}{%
+            for plugin in hostvars[inventory_hostname][config]['config']['roles']['dehydrated']['plugins']['clean_challenge'] | default([]) %}
+    {{ plugin }}
+{% endfor %}{% endif %}{% endfor %}
 }
 
 sync_cert() {
