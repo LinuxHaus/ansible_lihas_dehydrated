@@ -76,6 +76,7 @@
   loop:
     - ca.sh
     - contact_email.sh
+    - domains.sh
     - group.sh
     - hook_chain.sh
     - hook.sh
