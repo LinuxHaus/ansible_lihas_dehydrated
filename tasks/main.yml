@@ -57,20 +57,41 @@
     cacheable: false
   loop: "{{ configspaces }}"
   when: hostvars[inventory_hostname][item]['config']['roles']['rproxy']['domains'] is defined
+- name: Check if legacy config exists
+  stat:
+    path: "/etc/dehydrated/conf.d/contact_email.sh"
+  register: result
+- name: "Init config prefix to support legacy systems"
+  ansible.builtin.set_fact:
+    ldcfg_prefix: ""
+- name: "Set config prefix to support new systems"
+  ansible.builtin.set_fact:
+    ldcfg_prefix: "10-"
+  when: not result.stat.exists
 - name: Dehydrated standard config
   ansible.builtin.template:
-    dest: "{{ item }}"
-    src: "files{{ item }}"
+    dest: "/etc/dehydrated/conf.d/{{ ldcfg_prefix }}{{ item }}"
+    src: "etc/dehydrated/conf.d/{{ item }}"
     mode: "0755"
   loop:
-    - /etc/dehydrated/conf.d/ca.sh
-    - /etc/dehydrated/conf.d/contact_email.sh
-    - /etc/dehydrated/conf.d/group.sh
-    - /etc/dehydrated/conf.d/hook_chain.sh
-    - /etc/dehydrated/conf.d/hook.sh
-    - /usr/local/bin/dehydrated-hook.sh
-    - /etc/cron.daily/dehydrated
-    - /etc/cron.monthly/dehydrated-cleanup
+    - ca.sh
+    - contact_email.sh
+    - group.sh
+    - hook_chain.sh
+    - hook.sh
+  loop_control:
+    loop_var: item
+  notify: Run dehydrated
+  become: "{{ lihas_become | default('no') }}"
+- name: Dehydrated cronjobs and hooks
+  ansible.builtin.template:
+    dest: "/{{ item }}"
+    src: "{{ item }}"
+    mode: "0755"
+  loop:
+    - usr/local/bin/dehydrated-hook.sh
+    - etc/cron.daily/dehydrated
+    - etc/cron.monthly/dehydrated-cleanup
   loop_control:
     loop_var: item
   notify: Run dehydrated
@@ -186,11 +207,11 @@
   become: "{{ lihas_become | default('no') }}"
 - name: Create /etc/dehydrated/domains.txt
   ansible.builtin.template:
-    dest: "{{ item }}"
-    src: "files{{ item }}"
+    dest: "/{{ item }}"
+    src: "{{ item }}"
     mode: "0644"
   loop:
-    - /etc/dehydrated/domains.txt
+    - etc/dehydrated/domains.txt
   loop_control:
     loop_var: item
   notify: Run dehydrated
