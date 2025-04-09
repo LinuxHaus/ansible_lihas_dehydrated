@@ -17,8 +17,6 @@ ansible-playbook -i localhost, dehydrated.yml
 
 ```
 LIHASVARS:
-  variables:
-    LETSENCRYPTMAIL: a@example.com
   roles:
     rproxy:
       domains:
